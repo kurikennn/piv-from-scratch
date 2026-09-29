@@ -4,6 +4,8 @@
 
 A Particle Image Velocimetry processor written from scratch in plain NumPy/SciPy. It comes with a synthetic image generator that has a known ground truth, so every error below is **measured**, not estimated.
 
+**Live demo:** [kurikennn.github.io/piv-from-scratch](https://kurikennn.github.io/piv-from-scratch/) renders the particle images and runs the correlation in WebGPU compute shaders, with a live error readout against the exact flow.
+
 ![Lamb–Oseen vortex: truth, single-pass error, deformation error](figures/vortex.png)
 
 ## Method
@@ -46,26 +48,42 @@ Multi-pass deformation cuts the core RMS error by **25×** against a single pass
 
 All numbers are in [`results/`](results) (`summary.json` plus one CSV per experiment).
 
+## WebGPU demo
+
+The [browser demo](https://kurikennn.github.io/piv-from-scratch/) ([`web/`](web)) seeds and advects particles in JavaScript, then does the heavy work in WGSL compute shaders:
+
+- **Rendering:** one GPU thread per pixel sums the pixel-integrated (erf) Gaussians of the particles in the neighbouring 8 × 8 px bins, then adds noise and quantises to 8 bits.
+- **Correlation:** one workgroup per interrogation window loads both windows into workgroup memory and evaluates the same mean-subtracted, normalised circular correlation as the FFT code, directly in space for shifts |s| ≤ 8 px (W = 32) or 7 px (W = 16). One thread then finds the peak, divides out the finite-window weighting and applies the Gaussian, parabolic or centroid fit.
+- **Validation and scoring** (median test, RMS against the exact vortex) run in JavaScript on the returned vectors.
+
+Sliders set d_τ, N_ppp, noise, vortex strength and W; the RMS error updates live.
+
+**Parity with Python.** [`scripts/export_fixtures.py`](scripts/export_fixtures.py) exports five image pairs and the NumPy results (single pass, `search_radius=8`) to [`web/fixtures/parity.json`](web/fixtures). [`web/parity.html`](https://kurikennn.github.io/piv-from-scratch/parity.html) runs them through the shader. CI runs the same page in headless Chromium (Playwright, SwiftShader WebGPU) with `nix run .#parity`. The maximum difference is **2.3·10⁻⁵ px** (tolerance 10⁻³ px; the difference is float32 vs float64).
+
+**Throughput at 1024² px**, one correlation pass at 50 % overlap: NumPy (FFT) processes 23 k vectors/s at W = 32 and 85 k vectors/s at W = 16 on a laptop CPU ([`results/throughput_numpy.json`](results/throughput_numpy.json)). The GPU figure depends on the viewer's hardware: press *Benchmark* in the demo to measure it against these numbers.
+
 ## Reproduce
 
 ```sh
 nix run .#experiments   # regenerates results/*.csv and figures/*.png (~75 s)
 nix flake check         # ruff + pytest (~5 s of tests)
+nix run .#parity        # WebGPU vs Python parity in headless Chromium
 ```
 
 `nix develop` gives a shell with Python 3.12, NumPy, SciPy, Matplotlib, pytest and ruff.
 
 ## Limitations
 
-- Synthetic images only (Phase 1). The generator is idealised: no laser-sheet profile, no background, and no lens aberrations.
+- Synthetic images only so far. The generator is idealised: no laser-sheet profile, no background, and no lens aberrations.
 - 2D-2C only; no stereo or tomographic PIV.
-- CPU only. A 512² image takes about 0.6 s for the full five-pass pipeline.
+- The Python pipeline is CPU only: a 512² image takes about 0.6 s for the full five-pass pipeline. The WebGPU demo runs a single pass only, with W ≤ 32 px and a ±8 px search range.
 - The ground truth is the Eulerian u(x). In curved flow the particle chord differs from it by a small modelling error (~6·10⁻³ px at the vortex peak).
 
 ## Roadmap
 
-- **Phase 2:** a WebGPU live demo on GitHub Pages, with WGSL compute-shader correlation, sliders for d_τ, N_ppp, noise, vortex strength and W, a live RMS readout, parity with Python to 1e-3 px, and a GPU vs NumPy throughput comparison.
-- **Phase 3:** real images from a PIV Challenge case, per-vector uncertainty quantification compared with the true synthetic error, and a link to DAQ/calibration practice.
+- Real images from a PIV Challenge case, processed with the same pipeline.
+- Per-vector uncertainty quantification, compared with the true error on synthetic data.
+- Multi-pass window deformation on the GPU.
 
 ## References
 
