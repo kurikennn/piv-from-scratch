@@ -60,7 +60,14 @@ Sliders set d_τ, N_ppp, noise, vortex strength and W; the RMS error updates liv
 
 **Parity with Python.** [`scripts/export_fixtures.py`](scripts/export_fixtures.py) exports five image pairs and the NumPy results (single pass, `search_radius=8`) to [`web/fixtures/parity.json`](web/fixtures). [`web/parity.html`](https://kurikennn.github.io/piv-from-scratch/parity.html) runs them through the shader. CI runs the same page in headless Chromium (Playwright, SwiftShader WebGPU) with `nix run .#parity`. The maximum difference is **2.3·10⁻⁵ px** (tolerance 10⁻³ px; the difference is float32 vs float64).
 
-**Throughput at 1024² px**, one correlation pass at 50 % overlap: NumPy (FFT) processes 23 k vectors/s at W = 32 and 85 k vectors/s at W = 16 on a laptop CPU ([`results/throughput_numpy.json`](results/throughput_numpy.json)). The GPU figure depends on the viewer's hardware: press *Benchmark* in the demo to measure it against these numbers.
+**Throughput at 1024² px**, one correlation pass at 50 % overlap (GPU: ±8 px direct correlation; NumPy: FFT, [`results/throughput_numpy.json`](results/throughput_numpy.json)):
+
+| Window | NumPy (CPU) | WebGPU (RTX 4060 Laptop, Chrome) | Speed-up |
+|---|---:|---:|---:|
+| W = 16 | 85 k vectors/s | 691 k vectors/s (23.3 ms/pass) | 8.2× |
+| W = 32 | 23 k vectors/s | 297 k vectors/s (13.4 ms/pass) | 13× |
+
+The GPU numbers were measured with the demo's *Benchmark* button ([`results/throughput_webgpu.json`](results/throughput_webgpu.json)); results on other hardware will differ.
 
 ## Reproduce
 

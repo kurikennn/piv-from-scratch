@@ -1,0 +1,24 @@
+{
+  "image": [
+    1024,
+    1024
+  ],
+  "overlap": 0.5,
+  "search_radius": 8,
+  "browser": "Chrome",
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "runs": [
+    {
+      "window": 16,
+      "vectors_per_second": 691243,
+      "ms_per_pass": 23.33,
+      "speedup_vs_numpy": 8.17
+    },
+    {
+      "window": 32,
+      "vectors_per_second": 296933,
+      "ms_per_pass": 13.37,
+      "speedup_vs_numpy": 13
+    }
+  ]
+}
