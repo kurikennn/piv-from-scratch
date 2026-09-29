@@ -39,20 +39,25 @@ async function run() {
     row.className = pass ? "pass" : "fail";
   }
 
-  gpu.resize(1024, 1024);
-  const rand = new Float32Array(1024 * 1024).map(() => Math.floor(Math.random() * 256));
-  gpu.uploadImages(rand, rand, 1024, 1024);
+  // ?bench=0 skips the throughput benchmark (CI runs on a software GPU, where it is slow and meaningless).
   const bench = {};
-  for (const win of [16, 32]) bench[win] = await gpu.benchmark({ win, repeat: 20 });
+  if (new URLSearchParams(location.search).get("bench") !== "0") {
+    gpu.resize(1024, 1024);
+    const rand = new Float32Array(1024 * 1024).map(() => Math.floor(Math.random() * 256));
+    gpu.uploadImages(rand, rand, 1024, 1024);
+    for (const win of [16, 32]) bench[win] = await gpu.benchmark({ win, repeat: 20 });
+  }
 
   const pass = cases.every((c) => c.pass);
   window.parityResult = { adapter: adapterName, tolerance_px: tol, pass, cases, benchmark: bench };
   log.textContent = pass
     ? `All ${cases.length} fixtures match Python within ${tol} px.`
     : "Parity FAILED.";
-  document.querySelector("#bench").textContent = [16, 32]
-    .map((w) => `W=${w}: ${Math.round(bench[w].vectorsPerSecond).toLocaleString()} vectors/s`)
-    .join(" · ");
+  document.querySelector("#bench").textContent = bench[32]
+    ? [16, 32]
+        .map((w) => `W=${w}: ${Math.round(bench[w].vectorsPerSecond).toLocaleString()} vectors/s`)
+        .join(" · ")
+    : "skipped";
 }
 
 run().catch((err) => {

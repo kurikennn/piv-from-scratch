@@ -44,16 +44,5 @@
       "pass": true
     }
   ],
-  "benchmark": {
-    "16": {
-      "vectorsPerSecond": 3244.0967054185603,
-      "msPerPass": 4971.8,
-      "n": 16129
-    },
-    "32": {
-      "vectorsPerSecond": 1894.2530491077432,
-      "msPerPass": 2095.285000000149,
-      "n": 3969
-    }
-  }
+  "benchmark": {}
 }

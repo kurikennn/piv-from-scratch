@@ -41,7 +41,8 @@ def main() -> int:
     handler = functools.partial(QuietHandler, directory=str(ROOT / "web"))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    url = f"http://127.0.0.1:{server.server_address[1]}/parity.html"
+    # The throughput benchmark is skipped: on a software adapter it is slow and meaningless.
+    url = f"http://127.0.0.1:{server.server_address[1]}/parity.html?bench=0"
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True, args=CHROMIUM_FLAGS)
