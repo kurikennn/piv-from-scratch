@@ -148,6 +148,30 @@ the baseline in the experiments.
 - **Vortex core:** interior vectors with `r < 2 r_c`.
 - **True outlier (E4):** `|e| > 0.5 px`.
 
+## 7. WebGPU implementation (`web/src/`)
+
+The browser demo implements the single-pass correlation of §2–§3 in WGSL (`shaders.js`).
+
+- **Search range.** Direct correlation costs O(W² (2R + 3)²) per window, so only shifts
+  |s| ≤ R are evaluated, with R = min(8, W/2 − 1) px. The extra ring at R + 1 supplies the
+  neighbours for the sub-pixel fit. The Python equivalent is `PIVConfig(search_radius=8)`,
+  which masks the FFT plane the same way (`pivfs.piv.search_mask`). The cap W/2 − 1 keeps
+  both neighbours of any admissible peak distinct under the circular wrap.
+- **Same arithmetic, different order.** Each workgroup (256 threads) loads the two windows
+  into workgroup memory, reduces their sums and sums of squares, and evaluates
+  `R(s) = Σ a'(x) b'((x + s) mod W) / √(Σa'² Σb'²)`. One thread then does the peak search
+  (first maximum in row-major order, like `numpy.argmax`), the peak ratio with the circular
+  5 × 5 exclusion, the division by `w(s)`, and the three-point fit with the same fallbacks.
+  Grey levels are integers, so the window sums and means are exact in float32. The remaining
+  differences come from float32 accumulation of the correlation sums: at most 2.3·10⁻⁵ px on
+  the fixtures.
+- **Rendering.** Each pixel sums the §1 integral over the particles in its own and the eight
+  neighbouring 8 × 8 px bins (counting-sorted on the CPU), with the same support
+  |pixel − round(particle)| ≤ ⌈d_τ⌉ + 1. `erf` uses Abramowitz & Stegun 7.1.26
+  (|error| < 1.5·10⁻⁷). Noise comes from a PCG hash and a Box–Muller transform. The demo's
+  images are not bit-identical to NumPy's, since the random streams differ; parity is
+  therefore tested on exported image pairs.
+
 ## References
 
 - Raffel, Willert, Scarano, Kähler, Wereley & Kompenhans, *Particle Image Velocimetry: A

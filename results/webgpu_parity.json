@@ -1,0 +1,59 @@
+{
+  "adapter": "google swiftshader",
+  "tolerance_px": 0.001,
+  "pass": true,
+  "cases": [
+    {
+      "name": "uniform (2.3, -1.7) px, W=32, Gaussian",
+      "vectors": 225,
+      "maxDiff": 6.3560809326901335e-06,
+      "over": 0,
+      "gridDiff": 0,
+      "pass": true
+    },
+    {
+      "name": "vortex, W=32, Gaussian",
+      "vectors": 225,
+      "maxDiff": 7.821553710929408e-06,
+      "over": 0,
+      "gridDiff": 0,
+      "pass": true
+    },
+    {
+      "name": "vortex, W=16, Gaussian",
+      "vectors": 961,
+      "maxDiff": 3.4019204406821046e-06,
+      "over": 0,
+      "gridDiff": 0,
+      "pass": true
+    },
+    {
+      "name": "vortex, noise 5 %, d=1 px, W=32, parabolic",
+      "vectors": 225,
+      "maxDiff": 8.7458438720045e-06,
+      "over": 0,
+      "gridDiff": 0,
+      "pass": true
+    },
+    {
+      "name": "vortex, d=0.75 px, W=32, centroid",
+      "vectors": 225,
+      "maxDiff": 2.3289586914110316e-05,
+      "over": 0,
+      "gridDiff": 0,
+      "pass": true
+    }
+  ],
+  "benchmark": {
+    "16": {
+      "vectorsPerSecond": 3244.0967054185603,
+      "msPerPass": 4971.8,
+      "n": 16129
+    },
+    "32": {
+      "vectorsPerSecond": 1894.2530491077432,
+      "msPerPass": 2095.285000000149,
+      "n": 3969
+    }
+  }
+}

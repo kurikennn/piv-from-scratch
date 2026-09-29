@@ -47,6 +47,7 @@ class PIVConfig:
     validate: apply the normalised median test after every pass.
     validate_final: validate the last pass too (set False to inspect raw vectors).
     median_eps, median_threshold: ε (px) and threshold of the median test.
+    search_radius: limit the peak search to |s| ≤ R px (None: whole plane).
     """
 
     windows: tuple[int, ...] = (64, 32, 16)
@@ -59,6 +60,7 @@ class PIVConfig:
     validate_final: bool = True
     median_eps: float = 0.1
     median_threshold: float = 2.0
+    search_radius: int | None = None
 
     @classmethod
     def single_pass(cls, window: int = 32, **kwargs: Any) -> PIVConfig:
@@ -154,14 +156,33 @@ def overlap_weight(window: int) -> FloatArray:
     return w1[:, None] * w1[None, :]
 
 
-def find_peaks(corr: FloatArray, exclusion: int = 2) -> tuple[IntArray, IntArray, FloatArray]:
+def search_mask(window: int, radius: int | None) -> NDArray[np.bool_]:
+    """Shifts searched for the peak: |s_x|, |s_y| ≤ min(radius, W/2 − 1).
+
+    ``None`` searches the whole plane. The cap W/2 − 1 keeps both neighbours of
+    any admissible peak distinct under the circular wrap. The array is
+    fft-shifted like the correlation planes.
+    """
+    if radius is None:
+        return np.ones((window, window), bool)
+    r = min(radius, window // 2 - 1)
+    s = np.abs(np.arange(window) - window // 2) <= r
+    return s[:, None] & s[None, :]
+
+
+def find_peaks(
+    corr: FloatArray, exclusion: int = 2, search_radius: int | None = None
+) -> tuple[IntArray, IntArray, FloatArray]:
     """Integer location of the highest peak of each plane, and the peak ratio.
 
-    The peak ratio is R₁ / R₂, where R₂ is the highest value outside a
+    Only shifts allowed by :func:`search_mask` are searched. The peak ratio is
+    R₁ / R₂, where R₂ is the highest searched value outside a
     (2·exclusion + 1)² neighbourhood of the primary peak R₁ (periodic, as the
     correlation is circular). It is +inf when R₂ ≤ 0.
     """
     n, h, w = corr.shape
+    if search_radius is not None:
+        corr = np.where(search_mask(w, search_radius), corr, -np.inf)
     flat = corr.reshape(n, -1).argmax(axis=1)
     iy, ix = np.divmod(flat, w)
     k = np.arange(n)
@@ -184,8 +205,12 @@ def correlate_pass(
     window: int,
     overlap: float,
     estimator: Estimator,
+    search_radius: int | None = None,
 ) -> dict[str, Any]:
     """One correlation pass: grid, FFT correlation, peak search, sub-pixel fit.
+
+    ``search_radius`` limits the peak search to |s| ≤ R (see :func:`search_mask`);
+    this is the algorithm the WebGPU demo implements with direct correlation.
 
     Returns a dict with grid coordinates ``x, y`` and displacements ``u, v``
     (all of shape (rows, cols)), the ``peak_ratio``, and ``n_fallback``, the
@@ -196,7 +221,7 @@ def correlate_pass(
     corr = cross_correlate(
         extract_windows(img_a, rows, cols, window), extract_windows(img_b, rows, cols, window)
     )
-    iy, ix, ratio = find_peaks(corr)
+    iy, ix, ratio = find_peaks(corr, search_radius=search_radius)
     fit = refine_peaks(corr / overlap_weight(window), iy, ix, estimator)
     centre = window // 2
     gy, gx = np.meshgrid(rows + (window - 1) / 2, cols + (window - 1) / 2, indexing="ij")
@@ -236,7 +261,7 @@ def run_piv(img_a: FloatArray, img_b: FloatArray, cfg: PIVConfig | None = None) 
                 gu, gv = smooth_field(gu), smooth_field(gv)
             ud, vd = dense_predictor(prev["x"], prev["y"], gu, gv, img_a.shape)
             a, b = deform_pair(img_a, img_b, ud, vd)
-        res = correlate_pass(a, b, window, cfg.overlap, cfg.estimator)
+        res = correlate_pass(a, b, window, cfg.overlap, cfg.estimator, cfg.search_radius)
         if prev is not None:
             pu, pv = interpolate_field(prev["x"], prev["y"], gu, gv, res["x"], res["y"])
             res["u"] = res["u"] + pu

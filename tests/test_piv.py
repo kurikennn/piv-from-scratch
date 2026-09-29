@@ -80,3 +80,19 @@ def test_against_openpiv():
 
 def test_shape_is_respected():
     assert SHAPE == SynthConfig().shape
+
+
+def test_search_radius_matches_full_plane_for_small_displacement():
+    flow = LambOseen(v_max=4.0)
+    img_a, img_b, _ = generate_pair(SynthConfig(seed=9), flow)
+    full = run_piv(img_a, img_b, PIVConfig.single_pass(32, validate=False))
+    bounded = run_piv(img_a, img_b, PIVConfig.single_pass(32, validate=False, search_radius=8))
+    same = (full.u == bounded.u) & (full.v == bounded.v)
+    assert same.mean() > 0.99
+
+
+def test_search_mask_caps_radius():
+    from pivfs.piv import search_mask
+
+    assert search_mask(32, 8).sum() == 17**2
+    assert search_mask(16, 8).sum() == 15**2

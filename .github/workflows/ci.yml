@@ -15,3 +15,17 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: nix flake check (ruff + pytest)
         run: nix flake check -L
+
+  webgpu-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: WGSL vs NumPy parity (headless Chromium, SwiftShader WebGPU)
+        run: nix run .#parity
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webgpu-parity
+          path: results/webgpu_parity.json

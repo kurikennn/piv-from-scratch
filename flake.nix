@@ -18,6 +18,16 @@
           pytest
         ]);
         tools = [ python pkgs.ruff ];
+        # Headless Chromium + Playwright for the WebGPU parity test (Phase 2).
+        webPython = pkgs.python312.withPackages (ps: with ps; [ playwright ]);
+        chromiumOnly = pkgs.playwright-driver.browsers.override {
+          withFirefox = false;
+          withWebkit = false;
+        };
+        webEnv = ''
+          export PLAYWRIGHT_BROWSERS_PATH=${chromiumOnly}
+          export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+        '';
       in
       {
         devShells.default = pkgs.mkShell {
@@ -26,6 +36,11 @@
             export PYTHONPATH="$PWD/src''${PYTHONPATH:+:$PYTHONPATH}"
             export MPLBACKEND=Agg
           '';
+        };
+
+        devShells.web = pkgs.mkShell {
+          packages = [ webPython ];
+          shellHook = webEnv;
         };
 
         checks.default = pkgs.runCommand "pivfs-checks" { nativeBuildInputs = tools; } ''
@@ -38,6 +53,14 @@
           pytest -q -p no:cacheprovider tests
           touch $out
         '';
+
+        apps.parity = {
+          type = "app";
+          program = toString (pkgs.writeShellScript "pivfs-webgpu-parity" ''
+            ${webEnv}
+            exec ${webPython}/bin/python scripts/webgpu_parity.py "$@"
+          '');
+        };
 
         apps.experiments = {
           type = "app";

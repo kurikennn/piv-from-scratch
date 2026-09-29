@@ -1,0 +1,39 @@
+{
+  "image": [
+    1024,
+    1024
+  ],
+  "overlap": 0.5,
+  "cpu": "x86_64",
+  "numpy": "2.2.5",
+  "runs": [
+    {
+      "window": 16,
+      "search_radius": null,
+      "vectors": 16129,
+      "ms_per_pass": 190.6480610006838,
+      "vectors_per_second": 84600.91288283361
+    },
+    {
+      "window": 16,
+      "search_radius": 8,
+      "vectors": 16129,
+      "ms_per_pass": 189.18988700024784,
+      "vectors_per_second": 85252.97126467903
+    },
+    {
+      "window": 32,
+      "search_radius": null,
+      "vectors": 3969,
+      "ms_per_pass": 170.11610500048846,
+      "vectors_per_second": 23331.124351739676
+    },
+    {
+      "window": 32,
+      "search_radius": 8,
+      "vectors": 3969,
+      "ms_per_pass": 173.32072779972805,
+      "vectors_per_second": 22899.742289255653
+    }
+  ]
+}

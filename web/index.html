@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PIV WebGPU Demo</title>
+  <meta name="description" content="Particle Image Velocimetry running in WebGPU compute shaders, with live error against a known ground truth.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>PIV in WebGPU</h1>
+      <p class="sub">Synthetic particle images of a Lamb–Oseen vortex are rendered and cross-correlated in WGSL
+        compute shaders, one workgroup per interrogation window. The error is measured against the exact flow.</p>
+    </div>
+    <nav>
+      <a href="parity.html">Parity test</a>
+      <a href="https://github.com/kurikennn/piv-from-scratch">Source</a>
+    </nav>
+  </header>
+
+  <div id="unsupported" class="notice" hidden></div>
+
+  <main class="layout">
+    <section class="stage">
+      <div class="canvas-wrap">
+        <canvas id="image" width="512" height="512" aria-label="Particle image"></canvas>
+        <canvas id="overlay" width="1024" height="1024" aria-label="Velocity vectors"></canvas>
+      </div>
+      <div class="legend">
+        <span>vector error |Δu|</span>
+        <span class="ramp" id="ramp"></span>
+        <span id="ramp-labels"><span>0</span><span>0.25</span><span>≥ 0.5 px</span></span>
+        <span class="swatch outlier"></span><span>replaced outlier</span>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <fieldset>
+        <legend>Particles &amp; camera</legend>
+        <label>Particle diameter d<sub>τ</sub> <output id="dTau-out"></output>
+          <input id="dTau" type="range" min="0.5" max="5" step="0.25" value="2.5"></label>
+        <label>Density N<sub>ppp</sub> <output id="ppp-out"></output>
+          <input id="ppp" type="range" min="0.005" max="0.1" step="0.005" value="0.05"></label>
+        <label>Noise σ <output id="noise-out"></output>
+          <input id="noise" type="range" min="0" max="10" step="0.5" value="0"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Flow</legend>
+        <label>Vortex peak velocity v<sub>max</sub> <output id="vmax-out"></output>
+          <input id="vmax" type="range" min="0" max="8" step="0.25" value="6"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Processing</legend>
+        <div class="row">
+          <label>Window W
+            <select id="win"><option value="16">16 px</option><option value="32" selected>32 px</option></select></label>
+          <label>Image
+            <select id="size"><option value="512" selected>512²</option><option value="1024">1024²</option></select></label>
+        </div>
+        <label>Sub-pixel estimator
+          <select id="estimator">
+            <option value="gaussian" selected>Gaussian 3-point</option>
+            <option value="parabolic">Parabolic 3-point</option>
+            <option value="centroid">Centroid 3×3</option>
+          </select></label>
+        <label class="check"><input id="validate" type="checkbox" checked> Median-test validation</label>
+      </fieldset>
+      <fieldset>
+        <legend>View</legend>
+        <div class="row">
+          <label>Frame
+            <select id="view"><option value="flicker" selected>A ↔ B</option><option value="0">A</option><option value="1">B</option></select></label>
+          <label>Arrow scale <output id="arrow-out"></output>
+            <input id="arrow" type="range" min="1" max="8" step="0.5" value="3"></label>
+        </div>
+        <div class="row buttons">
+          <button id="reseed" type="button">New particles</button>
+          <button id="animate" type="button" aria-pressed="false">Animate</button>
+        </div>
+      </fieldset>
+
+      <dl class="stats">
+        <div><dt>RMS error, interior</dt><dd id="s-rms">–</dd></div>
+        <div><dt>RMS error, core r &lt; 2r<sub>c</sub></dt><dd id="s-core">–</dd></div>
+        <div><dt>Vectors with |Δu| &gt; 0.5 px</dt><dd id="s-out">–</dd></div>
+        <div><dt>Flagged by median test</dt><dd id="s-flag">–</dd></div>
+        <div><dt>Estimator fallbacks</dt><dd id="s-fb">–</dd></div>
+        <div><dt>Vectors</dt><dd id="s-n">–</dd></div>
+        <div><dt>Particles (CPU seeding)</dt><dd id="s-cpu">–</dd></div>
+        <div><dt>GPU render + correlate</dt><dd id="s-gpu">–</dd></div>
+      </dl>
+
+      <fieldset>
+        <legend>Throughput at 1024² px</legend>
+        <button id="bench" type="button">Benchmark GPU vs NumPy</button>
+        <p id="bench-out" class="small">One correlation pass, 50 % overlap, ±8 px search on the GPU; NumPy uses
+          the FFT pipeline from the Python package.</p>
+      </fieldset>
+      <p class="small" id="adapter"></p>
+    </aside>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

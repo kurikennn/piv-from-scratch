@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PIV WebGPU parity</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page">
+  <main class="narrow">
+    <h1>WebGPU ↔ Python parity</h1>
+    <p>Fixture image pairs exported by <code>scripts/export_fixtures.py</code> are processed by the WGSL
+      correlation shader and compared vector by vector with the NumPy results
+      (single pass, ±8 px search, no validation). Adapter: <span id="adapter">…</span></p>
+    <p id="log" class="status">Running…</p>
+    <table id="cases">
+      <thead><tr><th>Case</th><th>Vectors</th><th>max |Δ| (px)</th><th>&gt; tol</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p>GPU throughput at 1024² px, one correlation pass: <span id="bench">…</span></p>
+    <p><a href="./">← live demo</a></p>
+  </main>
+  <script type="module" src="src/parity.js"></script>
+</body>
+</html>
