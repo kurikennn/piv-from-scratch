@@ -1,0 +1,5 @@
+method,final_window_px,passes,rms_interior_px,rms_core_px,flagged_fraction
+single pass W=32,32,1,0.214906,0.674489,0.002289
+single pass W=16,16,1,0.164522,0.370487,0.012850
+multi-pass 64→32 (+2 it.),32,4,0.052196,0.162035,0.003330
+multi-pass 64→32→16 (+2 it.),16,5,0.020178,0.027043,0.000000
